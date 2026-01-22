@@ -1,0 +1,2 @@
+# MAGMAinfobot
+Magma
