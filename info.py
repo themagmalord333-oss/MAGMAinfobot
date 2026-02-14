@@ -32,7 +32,7 @@ def keep_alive():
 API_ID = 37314366
 API_HASH = "bd4c934697e7e91942ac911a5a287b46"
 
-# --- 🔐 NEW SESSION STRING ---
+# --- 🔐 SESSION STRING ---
 SESSION_STRING = "BQI5Xz4ASfzypOgrMRV3KOAURi3vOstv3Lsgw2OCyTVS1OUxF288qtA55BP6oiRZ60Dp43i1TIDGXZXVJ71__uGWDhLf9Ic21YoxYASSlUavNlfezamNRrNNdcEr6gcU9oxy2YUNUgK3r1ugR_gv0VSvlKn39nehnw5BKQ-mnVAhVbcayb_8YW8o5NpGA7jIEalfnH3-aUmFYk2mvEwOnx8WWixpPOfkVb8gWx7F2DVcGCgTq-jejGlv5aopkqb-QrFIFDM2Y4z-qrA6GoTpv1oQJ_KTjX3NKb-i36Uw1zgBMY_JPi2qjK8_iVTaepFTFhBDVnZ2jAUbGMcjh9BJW1oAAKcLRgAAAAH99e3RAA"
 
 TARGET_BOT = "Random_insight69_bot"
@@ -272,5 +272,11 @@ async def start_bot():
     await app.stop()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    # --- FIX FOR PYTHON 3.10+ AND RENDER ---
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
     loop.run_until_complete(start_bot())
