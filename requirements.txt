@@ -1,3 +1,4 @@
-pyTelegramBotAPI
-requests
+pyrogram
+tgcrypto
 flask
+pysocks
