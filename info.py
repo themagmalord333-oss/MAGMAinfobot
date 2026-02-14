@@ -1,7 +1,17 @@
 import os
 import asyncio
-import json
 import logging
+
+# --- ⚠️ CRITICAL FIX FOR PYTHON 3.10+ / 3.14 (MUST BE AT THE TOP) ---
+# This creates an event loop before Pyrogram tries to find one during import.
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+# --- NOW IMPORT EVERYTHING ELSE ---
+import json
 import re
 from threading import Thread
 from flask import Flask
@@ -272,11 +282,6 @@ async def start_bot():
     await app.stop()
 
 if __name__ == "__main__":
-    # --- FIX FOR PYTHON 3.10+ AND RENDER ---
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
+    # The loop is already created at the top, so we just retrieve it
+    loop = asyncio.get_event_loop()
     loop.run_until_complete(start_bot())
