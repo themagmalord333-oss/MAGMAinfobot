@@ -1,258 +1,276 @@
-import telebot
-import requests
-import json
 import os
+import asyncio
+import json
+import logging
 import re
-import subprocess
-import threading
-import time
-from datetime import datetime
-from telebot import types
-from flask import Flask  # Fake Website ke liye
+from threading import Thread
+from flask import Flask
+from pyrogram import Client, filters, enums, idle
+from pyrogram.errors import UserNotParticipant, PeerIdInvalid, ChannelInvalid
 
-# --- CONFIG ---
-TOKEN = '8321333186:AAEWHHj7OpeS8lARdm1vNjcWOd2ilrc2vWE'
-API_URL = 'https://source-code-api.vercel.app/' 
-OWNER = 8081343902
-CHANNEL = '@ABOUTMAGMA' 
-CHANNEL_LINK = 'https://t.me/ABOUTMAGMA'
-MAIN_FOOTER = "Powered by : @MAGMAxRICH"
-# --------------
+# --- LOGGING SETUP ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# --- FAKE WEBSITE SERVER (RENDER KEEPALIVE) ---
-app = Flask(__name__)
+# --- FAKE WEBSITE FOR RENDER ---
+web_app = Flask(__name__)
 
-@app.route('/')
+@web_app.route('/')
 def home():
-    return "🤖 ANY SNAP BOT IS RUNNING 24/7 🚀"
+    return "⚡ ANYSNAP Bot is Running Successfully!"
 
-def run_web_server():
-    # Render assigns PORT env variable, default to 8080 if not found
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
 
 def keep_alive():
-    t = threading.Thread(target=run_web_server)
+    t = Thread(target=run_web)
     t.daemon = True
     t.start()
-# ---------------------------------------------
 
-bot = telebot.TeleBot(TOKEN)
-running_bots = {}
+# --- CONFIGURATION ---
+API_ID = 37314366
+API_HASH = "bd4c934697e7e91942ac911a5a287b46"
 
-if not os.path.exists('clones'):
-    os.makedirs('clones')
+# --- 🔐 NEW SESSION STRING ---
+SESSION_STRING = "BQI5Xz4ASfzypOgrMRV3KOAURi3vOstv3Lsgw2OCyTVS1OUxF288qtA55BP6oiRZ60Dp43i1TIDGXZXVJ71__uGWDhLf9Ic21YoxYASSlUavNlfezamNRrNNdcEr6gcU9oxy2YUNUgK3r1ugR_gv0VSvlKn39nehnw5BKQ-mnVAhVbcayb_8YW8o5NpGA7jIEalfnH3-aUmFYk2mvEwOnx8WWixpPOfkVb8gWx7F2DVcGCgTq-jejGlv5aopkqb-QrFIFDM2Y4z-qrA6GoTpv1oQJ_KTjX3NKb-i36Uw1zgBMY_JPi2qjK8_iVTaepFTFhBDVnZ2jAUbGMcjh9BJW1oAAKcLRgAAAAH99e3RAA"
 
-def is_member(user_id):
-    try:
-        member = bot.get_chat_member(CHANNEL, user_id)
-        return member.status in ['member', 'administrator', 'creator']
-    except:
-        return False
+TARGET_BOT = "Random_insight69_bot"
+NEW_FOOTER = "⚡ Designed & Powered by @Xldaredevil"
 
-@bot.message_handler(commands=['start'])
-def start_command(m):
-    user_id = m.from_user.id
-    if user_id == OWNER:
-        show_menu(m, user_id)
-        return
-    if not is_member(user_id):
-        show_join_message(m)
-        return
-    show_menu(m, user_id)
+# --- 🔐 SECURITY SETTINGS ---
+ALLOWED_GROUPS = [-1003797378635] 
 
-def show_join_message(m):
-    markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton("✅ Join Channel", url=CHANNEL_LINK)
-    btn2 = types.InlineKeyboardButton("🔄 Verify Join", callback_data="verify")
-    markup.add(btn1, btn2)
-    bot.send_message(m.chat.id, f"⚠️ *ACCESS RESTRICTED*\n\nTo use this bot, join:\n{CHANNEL}", reply_markup=markup, parse_mode='Markdown')
+FSUB_CONFIG = [
+    {"chat_id": -1003797378635, "link": "https://t.me/+GOPNq4E5vONlN2Jl"},  # Group
+    {"chat_id": "Daredevilxlhub", "link": "https://t.me/Daredevilxlhub"}    # Channel
+]
 
-def show_menu(m, user_id):
-    if user_id == OWNER:
-        msg = "👑 *OWNER PANEL*\n\n🔹 /num - Search\n🔹 /clone - Create Bot\n🔹 /myclones - View Clones\n🔹 /deleteclone - Delete\n🔹 /stopclone - Stop\n🔹 /running - Active Bots\n🔹 /users - All Users"
-    else:
-        msg = "🚀 *WELCOME TO ANYSNAP BOT*\n\n🔍 *Search Database*\n📌 `/num 9876543210`\n\n🤖 *CLONE FEATURES:*\n🔹 /clone - Create Bot\n🔹 /myclones - Check Clones"
-    bot.send_message(m.chat.id, msg, parse_mode='Markdown')
+app = Client("anysnap_secure_bot", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
 
-@bot.callback_query_handler(func=lambda call: call.data == "verify")
-def verify_callback(call):
-    if is_member(call.from_user.id):
-        bot.answer_callback_query(call.id, "✅ Verified!")
-        show_menu(call.message, call.from_user.id)
-    else:
-        bot.answer_callback_query(call.id, "❌ Join First!")
-        show_join_message(call.message)
-
-def member_required(func):
-    def wrapper(m):
-        if m.from_user.id == OWNER or is_member(m.from_user.id):
-            return func(m)
-        show_join_message(m)
-    return wrapper
-
-@bot.message_handler(commands=['num'])
-@member_required
-def search_number(m):
-    try:
-        if len(m.text.split()) < 2:
-            bot.reply_to(m, "❌ Usage: /num 9876543210")
-            return
-        number = m.text.split()[1].strip()[-10:]
-        wait_msg = bot.reply_to(m, f"🔍 Searching: {number}...")
-        
+# --- HELPER: CHECK IF USER JOINED ---
+async def check_user_joined(client, user_id):
+    missing = False
+    for ch in FSUB_CONFIG:
         try:
-            response = requests.get(API_URL, params={'num': number}, timeout=30)
-        except:
-            bot.edit_message_text("❌ API Timeout", m.chat.id, wait_msg.message_id)
+            member = await client.get_chat_member(ch["chat_id"], user_id)
+            if member.status in [enums.ChatMemberStatus.LEFT, enums.ChatMemberStatus.BANNED]:
+                missing = True
+                break
+        except UserNotParticipant:
+            missing = True
+            break
+        except (PeerIdInvalid, ChannelInvalid, KeyError):
+            pass
+        except Exception:
+            pass 
+    return not missing 
+
+# --- DASHBOARD ---
+@app.on_message(filters.command(["start", "help", "menu"], prefixes="/") & (filters.private | filters.chat(ALLOWED_GROUPS)))
+async def show_dashboard(client, message):
+    try:
+        if not await check_user_joined(client, message.from_user.id):
+            buttons_text = ""
+            for ch in FSUB_CONFIG:
+                buttons_text += f"➡️ **[Join Channel]({ch['link']})**\n"
+
+            return await message.reply_text(
+                "🚫 **Access Denied!**\n\n"
+                "Bot use karne ke liye pehle niche diye gaye channels join karein:\n\n"
+                f"{buttons_text}\n"
+                "__Join karne ke baad dubara /start dabayein.__",
+                disable_web_page_preview=True
+            )
+
+        text = (
+            "📖 **ANYSNAP BOT DASHBOARD**\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "📢 **Channel:** [Join Here](https://t.me/Daredevilxlhub)\n"
+            "👥 **Group:** [Join Here](https://t.me/+GOPNq4E5vONlN2Jl)\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            "🔍 **Lookup Services:**\n"
+            "📱 `/num [number]`\n🚗 `/vehicle [plate]`\n🆔 `/aadhar [uid]`\n"
+            "👨‍👩‍👧‍👦 `/familyinfo [uid]`\n🔗 `/vnum [plate]`\n💸 `/fam [id]`\n📨 `/sms [number]`\n\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "⚡ **Designed & Powered by @Xldaredevil**"
+        )
+        await message.reply_text(text, disable_web_page_preview=True)
+    except Exception as e:
+        logger.error(f"Error in dashboard: {e}")
+
+# --- MAIN LOGIC ---
+@app.on_message(filters.command(["num", "vehicle", "aadhar", "familyinfo", "vnum", "fam", "sms"], prefixes="/") & (filters.private | filters.chat(ALLOWED_GROUPS)))
+async def process_request(client, message):
+
+    try:
+        if not await check_user_joined(client, message.from_user.id):
+            buttons_text = ""
+            for ch in FSUB_CONFIG:
+                buttons_text += f"➡️ **[Join Channel]({ch['link']})**\n"
+
+            return await message.reply_text(
+                "🚫 **Access Denied!**\n\n"
+                "Result dekhne ke liye pehle join karein:\n\n"
+                f"{buttons_text}\n"
+                f"__Join karne ke baad wapas `/{message.command[0]}` bhejein.__",
+                disable_web_page_preview=True
+            )
+
+        if len(message.command) < 2:
+            return await message.reply_text(f"❌ **Data Missing!**\nUsage: `/{message.command[0]} <value>`")
+
+        status_msg = await message.reply_text(f"🔍 **Searching via ANYSNAP...**")
+
+        try:
+            sent_req = await client.send_message(TARGET_BOT, message.text)
+        except PeerIdInvalid:
+             await status_msg.edit("❌ **Error:** Target Bot ID invalid. Userbot must start @Random_insight69_bot first.")
+             return
+        except Exception as e:
+            await status_msg.edit(f"❌ **Request Error:** {e}")
             return
 
-        if response.status_code == 200:
-            data = response.json()
-            if 'result' in data and data['result']:
-                json_res = json.dumps(data['result'], indent=2, ensure_ascii=False)
-                try: bot.delete_message(m.chat.id, wait_msg.message_id)
-                except: pass
-                
-                if len(json_res) > 4000:
-                    with open(f"{number}.json", "w", encoding='utf-8') as f: f.write(json_res)
-                    with open(f"{number}.json", "rb") as f:
-                        bot.send_document(m.chat.id, f, caption=f"📂 Result Long.\n\n📢 {MAIN_FOOTER}")
-                    os.remove(f"{number}.json")
+        target_response = None
+
+        # --- SMART WAIT LOOP ---
+        for attempt in range(30): 
+            await asyncio.sleep(2) 
+            try:
+                async for log in client.get_chat_history(TARGET_BOT, limit=1):
+                    if log.id == sent_req.id: continue
+
+                    text_content = (log.text or log.caption or "").lower()
+
+                    ignore_words = [
+                        "wait", "processing", "searching", "scanning", 
+                        "generating", "loading", "checking", 
+                        "looking up", "uploading", "sending file", 
+                        "attaching", "sending"
+                    ]
+
+                    if any(word in text_content for word in ignore_words) and not log.document:
+                        if f"Attempt {attempt+1}" not in status_msg.text:
+                            await status_msg.edit(f"⏳ **Fetching Data... (Attempt {attempt+1})**")
+                        continue 
+
+                    if log.document or "{" in text_content or "success" in text_content:
+                        target_response = log
+                        break
+
+                    target_response = log
+                    break
+
+            except Exception as e:
+                logger.error(f"Error fetching history: {e}")
+
+            if target_response: break
+
+        if not target_response:
+            await status_msg.edit("❌ **No Data Found**")
+            return
+
+        # --- DATA HANDLING ---
+        raw_text = ""
+        if target_response.document:
+            await status_msg.edit("📂 **Downloading Result File...**")
+            try:
+                file_path = await client.download_media(target_response)
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    raw_text = f.read()
+                os.remove(file_path)
+            except Exception as e:
+                await status_msg.edit(f"❌ **File Error:** {e}")
+                return
+        elif target_response.text:
+            raw_text = target_response.text
+        elif target_response.caption:
+            raw_text = target_response.caption
+
+        if not raw_text or len(raw_text.strip()) < 2:
+            await status_msg.edit("❌ **No Data Found**")
+            return
+
+        # --- 🔥 AGGRESSIVE CLEANING ---
+        # 1. Remove escaped version (Slash wala)
+        raw_text = raw_text.replace(r"⚡ Designed & Powered by @DuXxZx\_info", "")
+        # 2. Remove normal version
+        raw_text = raw_text.replace("⚡ Designed & Powered by @DuXxZx_info", "")
+        # 3. Remove just the username (Backup)
+        raw_text = raw_text.replace(r"@DuXxZx\_info", "").replace("@DuXxZx_info", "")
+        # 4. Remove empty separator lines if left behind
+        raw_text = raw_text.replace("====================\n\n", "====================\n")
+
+        # JSON Parsing
+        final_output = raw_text 
+        try:
+            clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+            json_match = re.search(r'\{.*\}', clean_text, re.DOTALL)
+
+            if json_match:
+                parsed_data = json.loads(json_match.group(0))
+                results = []
+                if "data" in parsed_data:
+                    data_part = parsed_data["data"]
+                    if isinstance(data_part, list) and len(data_part) > 0:
+                        if "results" in data_part[0]:
+                            results = data_part[0]["results"]
+                        else:
+                            results = data_part
+                    elif isinstance(data_part, dict):
+                        if "results" in data_part:
+                            results = data_part["results"]
+                        else:
+                            results = [data_part]
+                elif "results" in parsed_data:
+                    results = parsed_data["results"]
                 else:
-                    try:
-                        bot.send_message(m.chat.id, f"```json\n{json_res}\n```\n📢 {MAIN_FOOTER}", parse_mode='Markdown')
-                    except:
-                        bot.send_message(m.chat.id, f"{json_res}\n\n📢 {MAIN_FOOTER}")
-            else:
-                bot.edit_message_text(f"❌ No Record Found\n📢 {MAIN_FOOTER}", m.chat.id, wait_msg.message_id)
+                    results = parsed_data
+
+                final_output = json.dumps(results, indent=4, ensure_ascii=False)
+        except Exception:
+            pass
+
+        # --- SENDING RESULT & AUTO DELETE ---
+        formatted_msg = f"```json\n{final_output}\n```\n\n{NEW_FOOTER}"
+        await status_msg.delete()
+
+        sent_messages_list = [] 
+
+        if len(formatted_msg) > 4000:
+            chunks = [formatted_msg[i:i+4000] for i in range(0, len(formatted_msg), 4000)]
+            for chunk in chunks:
+                msg = await message.reply_text(chunk)
+                sent_messages_list.append(msg)
+                await asyncio.sleep(1) 
         else:
-            bot.edit_message_text(f"❌ API Error: {response.status_code}", m.chat.id, wait_msg.message_id)
+            msg = await message.reply_text(formatted_msg)
+            sent_messages_list.append(msg)
+
+        # ⏳ AUTO DELETE (60s)
+        await asyncio.sleep(60)
+        for m in sent_messages_list:
+            try:
+                await m.delete()
+            except Exception:
+                pass
+
     except Exception as e:
-        bot.reply_to(m, f"❌ Error: {e}")
-
-@bot.message_handler(commands=['clone'])
-@member_required
-def create_clone(m):
-    bot.reply_to(m, "🤖 Send Bot Token from @BotFather:")
-    bot.register_next_step_handler(m, process_token)
-
-def process_token(m):
-    try:
-        token = m.text.strip()
-        if not re.match(r'^\d+:[A-Za-z0-9_-]+$', token):
-            bot.reply_to(m, "❌ Invalid Token!")
-            return
-        bot.reply_to(m, "✅ Send Bot Name (No spaces):")
-        bot.register_next_step_handler(m, process_name, token, m.from_user.id)
-    except:
-        bot.reply_to(m, "❌ Error")
-
-def process_name(m, token, user_id):
-    try:
-        bot_name = m.text.strip().replace(" ", "_")
-        if f"{user_id}_{bot_name}" in running_bots:
-            bot.reply_to(m, "⚠️ Already running!")
-            return
-        
-        user_dir = f"clones/{user_id}"
-        if not os.path.exists(user_dir): os.makedirs(user_dir)
-        
-        # Footer Logic
         try:
-            u = bot.get_chat(user_id)
-            ft = f"Powered by : @{u.username.replace('_', '\\_')}" if u.username else f"Powered by : {u.first_name}"
-            cr = f"⚡ Created by @{u.username}" if u.username else f"⚡ Created by {u.first_name}"
+            await status_msg.edit(f"❌ **Error:** {str(e)}")
         except:
-            ft, cr = f"Powered by : {user_id}", f"⚡ Created by {user_id}"
+            pass
 
-        # CLONE CODE
-        code = f'''import telebot, requests, json, os
-TOKEN, API_URL = '{token}', '{API_URL}'
-FOOTER = r"""{ft}"""
-bot = telebot.TeleBot(TOKEN)
+# --- START SERVER & BOT ---
+async def start_bot():
+    print("🚀 Starting Web Server...")
+    keep_alive() 
+    print("🚀 Starting Pyrogram Client...")
+    await app.start()
+    print("✅ Bot is Online!")
+    await idle()
+    await app.stop()
 
-@bot.message_handler(commands=['start'])
-def s(m): bot.reply_to(m, f"🚀 {bot_name}\\nUse /num\\n{cr}")
-
-@bot.message_handler(commands=['num'])
-def n(m):
-    try:
-        if len(m.text.split()) < 2: return bot.reply_to(m, "Usage: /num 98xx")
-        n = m.text.split()[1][-10:]
-        msg = bot.reply_to(m, "🔍 ...")
-        r = requests.get(API_URL, params={{'num': n}}, timeout=30)
-        if r.status_code == 200 and r.json().get('result'):
-            js = json.dumps(r.json()['result'], indent=2, ensure_ascii=False)
-            try: bot.delete_message(m.chat.id, msg.message_id)
-            except: pass
-            if len(js)>4000:
-                with open(f"{{n}}.json","w") as f: f.write(js)
-                with open(f"{{n}}.json","rb") as f: bot.send_document(m.chat.id, f, caption=FOOTER)
-                os.remove(f"{{n}}.json")
-            else:
-                try: bot.send_message(m.chat.id, f"```json\\n{{js}}\\n```\\n📢 {{FOOTER}}", parse_mode='Markdown')
-                except: bot.send_message(m.chat.id, f"{{js}}\\n\\n📢 {{FOOTER}}")
-        else: bot.edit_message_text("❌ No Data", m.chat.id, msg.message_id)
-    except Exception as e: bot.reply_to(m, f"Error: {{e}}")
-
-bot.infinity_polling()
-'''
-        path = f"{user_dir}/{bot_name}_bot.py"
-        with open(path, 'w') as f: f.write(code)
-        
-        # Save Info
-        with open(f"{user_dir}/{bot_name}_info.json", 'w') as f:
-            json.dump({'user_id': user_id, 'name': bot_name, 'created': str(datetime.now())}, f)
-            
-        # Run Bot
-        proc = subprocess.Popen(['python3', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        running_bots[f"{user_id}_{bot_name}"] = {'process': proc, 'name': bot_name, 'user_id': user_id, 'start_time': str(datetime.now())}
-        
-        bot.reply_to(m, f"✅ {bot_name} Started!")
-        
-        # Monitor Thread
-        def monitor():
-            proc.communicate()
-            if f"{user_id}_{bot_name}" in running_bots: del running_bots[f"{user_id}_{bot_name}"]
-        threading.Thread(target=monitor, daemon=True).start()
-        
-    except Exception as e: bot.reply_to(m, f"❌ Error: {e}")
-
-@bot.message_handler(commands=['stopclone'])
-@member_required
-def stop_clone(m):
-    args = m.text.split()
-    uid = str(m.from_user.id)
-    if len(args) < 2:
-        l = [v['name'] for k,v in running_bots.items() if str(v['user_id'])==uid or uid==str(OWNER)]
-        bot.reply_to(m, "Running: " + ", ".join(l) if l else "None")
-        return
-    
-    name = args[1]
-    bid = f"{uid}_{name}"
-    # Owner Override
-    if uid == str(OWNER):
-        for k, v in running_bots.items():
-            if v['name'] == name: bid = k
-            
-    if bid in running_bots:
-        running_bots[bid]['process'].kill()
-        del running_bots[bid]
-        bot.reply_to(m, "✅ Stopped")
-    else:
-        bot.reply_to(m, "❌ Not Found")
-
-@bot.message_handler(commands=['myclones', 'deleteclone', 'running', 'users'])
-def other_cmds(m):
-    # Shortened for space, core logic remains same as previous full code
-    bot.reply_to(m, "Command received.") 
-
-# --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    print("🤖 Starting Web Server & Bot...")
-    keep_alive() # Starts Flask Server in background thread
-    try:
-        bot.infinity_polling()
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_bot())
