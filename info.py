@@ -49,7 +49,7 @@ TARGET_BOT = "Random_insight69_bot"
 NEW_FOOTER = "⚡ Designed & Powered by @MAGMAxRICH"
 
 # --- 🔐 SECURITY SETTINGS ---
-ALLOWED_GROUPS = [-1003797378635] 
+ALLOWED_GROUPS = [-1003387459132] 
 
 FSUB_CONFIG = [
     {"chat_id": -1003892920891, "link": "https://t.me/+Om1HMs2QTHk1N2Zh"},  # Group
