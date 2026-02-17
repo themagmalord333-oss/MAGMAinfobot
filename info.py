@@ -43,17 +43,17 @@ API_ID = 37314366
 API_HASH = "bd4c934697e7e91942ac911a5a287b46"
 
 # --- 🔐 SESSION STRING ---
-SESSION_STRING = "BQI5Xz4ASfzypOgrMRV3KOAURi3vOstv3Lsgw2OCyTVS1OUxF288qtA55BP6oiRZ60Dp43i1TIDGXZXVJ71__uGWDhLf9Ic21YoxYASSlUavNlfezamNRrNNdcEr6gcU9oxy2YUNUgK3r1ugR_gv0VSvlKn39nehnw5BKQ-mnVAhVbcayb_8YW8o5NpGA7jIEalfnH3-aUmFYk2mvEwOnx8WWixpPOfkVb8gWx7F2DVcGCgTq-jejGlv5aopkqb-QrFIFDM2Y4z-qrA6GoTpv1oQJ_KTjX3NKb-i36Uw1zgBMY_JPi2qjK8_iVTaepFTFhBDVnZ2jAUbGMcjh9BJW1oAAKcLRgAAAAH99e3RAA"
+SESSION_STRING = "BQI5Xz4AOktnQWe12ISEleEtUo1h5BaUdnFP6x6GnhuumEBJmX6fzSedZIBuWNkS1OR8QuW3I7FjMTPWcIh1Pddfr4Hs1EHzrOKXsp0WRYvMgZOcxa-TOMBry2q5EKVQuDt_PTFNO2gT4LPsR_ppqZq_4MIYXx9_YqPEidvdN73giJYkNr1KM8G6dyww0CWjTP8AZo9ZGmrQpSiWgrvmcgyOuwTvxQlb8kwh8nEI5eix_d0I2LClLoEgzAGsUbgy6rG8UsGfRuy0kcKEUpgSTJ-sKFasmxxx_PF9KKfEiV1cu0S2HoEa7RnLsCE92KDi6XELKzAhj_CIu4_TdzDs6_F3tAurWwAAAAGc59H6AA"
 
 TARGET_BOT = "Random_insight69_bot"
-NEW_FOOTER = "⚡ Designed & Powered by @Xldaredevil"
+NEW_FOOTER = "⚡ Designed & Powered by @MAGMAxRICH"
 
 # --- 🔐 SECURITY SETTINGS ---
 ALLOWED_GROUPS = [-1003797378635] 
 
 FSUB_CONFIG = [
-    {"chat_id": -1003797378635, "link": "https://t.me/+GOPNq4E5vONlN2Jl"},  # Group
-    {"chat_id": "Daredevilxlhub", "link": "https://t.me/Daredevilxlhub"}    # Channel
+    {"chat_id": -1003892920891, "link": "https://t.me/+Om1HMs2QTHk1N2Zh"},  # Group
+    {"chat_id": -1003387459132, "link": "https://t.me/+wZ9rDQC5fkYxOWJh"}    # Channel
 ]
 
 app = Client("anysnap_secure_bot", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
@@ -103,7 +103,7 @@ async def show_dashboard(client, message):
             "📱 `/num [number]`\n🚗 `/vehicle [plate]`\n🆔 `/aadhar [uid]`\n"
             "👨‍👩‍👧‍👦 `/familyinfo [uid]`\n🔗 `/vnum [plate]`\n💸 `/fam [id]`\n📨 `/sms [number]`\n\n"
             "━━━━━━━━━━━━━━━━━━\n"
-            "⚡ **Designed & Powered by @Xldaredevil**"
+            "⚡ **Designed & Powered by @MAGMAxRICH**"
         )
         await message.reply_text(text, disable_web_page_preview=True)
     except Exception as e:
