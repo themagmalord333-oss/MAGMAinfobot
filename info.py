@@ -47,6 +47,7 @@ SESSION_STRING = "BQI5Xz4AOktnQWe12ISEleEtUo1h5BaUdnFP6x6GnhuumEBJmX6fzSedZIBuWN
 
 TARGET_BOT = "Random_insight69_bot"
 NEW_FOOTER = "⚡ Designed & Powered by @MAGMAxRICH"
+OWNER_ID = 7727470646  # <-- ADDED OWNER ID
 
 # --- 🔐 SECURITY SETTINGS ---
 ALLOWED_GROUPS = [-1003387459132,-1003036761229] 
@@ -57,6 +58,34 @@ FSUB_CONFIG = [
 ]
 
 app = Client("anysnap_secure_bot", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
+
+# --- 🚀 NEW DYNAMIC AUTH LOGIC START ---
+async def check_allowed(_, __, message):
+    if not message: return False
+    # Owner or Private chat is always allowed. Otherwise check in ALLOWED_GROUPS list
+    if message.from_user and message.from_user.id == OWNER_ID:
+        return True
+    if message.chat.type == enums.ChatType.PRIVATE:
+        return True
+    return message.chat.id in ALLOWED_GROUPS
+
+dynamic_auth_filter = filters.create(check_allowed)
+
+@app.on_message(filters.command("auth", prefixes="/") & filters.user(OWNER_ID))
+async def auth_group(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("❌ **Usage:** `/auth [Chat ID]`\nExample: `/auth -1001234567890`")
+    try:
+        chat_id = int(message.command[1])
+        if chat_id not in ALLOWED_GROUPS:
+            ALLOWED_GROUPS.append(chat_id)
+            await message.reply_text(f"✅ **Success!** Bot is now allowed to work in GC: `{chat_id}`")
+        else:
+            await message.reply_text("ℹ️ Ye GC pehle se authorized hai.")
+    except ValueError:
+        await message.reply_text("❌ **Invalid ID!** Chat ID numbers mein honi chahiye.")
+# --- 🚀 NEW DYNAMIC AUTH LOGIC END ---
+
 
 # --- HELPER: CHECK IF USER JOINED ---
 async def check_user_joined(client, user_id):
@@ -77,7 +106,7 @@ async def check_user_joined(client, user_id):
     return not missing 
 
 # --- DASHBOARD ---
-@app.on_message(filters.command(["start", "help", "menu"], prefixes="/") & (filters.private | filters.chat(ALLOWED_GROUPS)))
+@app.on_message(filters.command(["start", "help", "menu"], prefixes="/") & dynamic_auth_filter)
 async def show_dashboard(client, message):
     try:
         if not await check_user_joined(client, message.from_user.id):
@@ -110,7 +139,7 @@ async def show_dashboard(client, message):
         logger.error(f"Error in dashboard: {e}")
 
 # --- MAIN LOGIC ---
-@app.on_message(filters.command(["num", "vehicle", "aadhar", "familyinfo", "vnum", "fam", "sms"], prefixes="/") & (filters.private | filters.chat(ALLOWED_GROUPS)))
+@app.on_message(filters.command(["num", "vehicle", "aadhar", "familyinfo", "vnum", "fam", "sms"], prefixes="/") & dynamic_auth_filter)
 async def process_request(client, message):
 
     try:
